@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+*.egg-info/
+venv/
+.venv/
+
+# Internal/sample business documents
+samples/*.txt
+web/data/staging/

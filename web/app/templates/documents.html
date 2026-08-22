@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ assistant.name }} Documents — Meldep AgentPod{% endblock %}
+{% block head_extra %}
+{% if latest_run and latest_run.status == "running" %}
+<meta http-equiv="refresh" content="3">
+{% endif %}
+{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h4 class="mb-0"><i class="bi bi-folder"></i> {{ assistant.name }} — Documents</h4>
+  <a href="/" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Dashboard
+  </a>
+</div>
+
+{% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+{% if latest_run %}
+  <div class="alert
+    {% if latest_run.status == 'running' %}alert-info
+    {% elif latest_run.status == 'success' %}alert-success
+    {% else %}alert-danger{% endif %} d-flex justify-content-between align-items-center">
+    <div>
+      {% if latest_run.status == "running" %}
+        <i class="bi bi-arrow-repeat"></i> Ingestion in progress — this page refreshes automatically...
+      {% elif latest_run.status == "success" %}
+        <i class="bi bi-check-circle"></i> Last ingestion succeeded ({{ latest_run.doc_count }} document(s) processed)
+        at {{ latest_run.finished_at.strftime("%Y-%m-%d %H:%M") if latest_run.finished_at else "" }}.
+      {% else %}
+        <i class="bi bi-x-circle"></i> Last ingestion failed: {{ latest_run.error_message }}
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title">Upload SOP files</h6>
+        <form method="post" action="/documents/{{ assistant.id }}/upload" enctype="multipart/form-data" class="mb-3">
+          <input type="file" name="files" accept=".txt" multiple class="form-control mb-2" required>
+          <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+            <i class="bi bi-upload"></i> Upload
+          </button>
+        </form>
+
+        {% if staged_files %}
+          <h6 class="mt-3 small text-muted">Staged, not yet ingested:</h6>
+          <ul class="small mb-3 ps-3">
+            {% for f in staged_files %}
+              <li>{{ f }}</li>
+            {% endfor %}
+          </ul>
+          <form method="post" action="/documents/{{ assistant.id }}/ingest">
+            <button type="submit" class="btn btn-primary btn-sm w-100"
+              {% if latest_run and latest_run.status == "running" %}disabled{% endif %}>
+              <i class="bi bi-gear"></i> Run ingestion
+            </button>
+          </form>
+        {% else %}
+          <p class="small text-muted mb-0">No files staged yet — upload some .txt files above.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title">Currently ingested</h6>
+        {% if documents %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Version</th>
+                  <th>Status</th>
+                  <th>Chunks</th>
+                  <th>Ingested</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for doc in documents %}
+                  <tr>
+                    <td>{{ doc.title }}</td>
+                    <td>
+                      {{ doc.category }}{% if doc.sub_category %} / {{ doc.sub_category }}{% endif %}
+                    </td>
+                    <td>{{ doc.version }}</td>
+                    <td>
+                      <span class="badge {% if doc.status == 'Published' and doc.is_active == 'Active' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ doc.status }}{% if doc.is_active != 'Active' %} ({{ doc.is_active }}){% endif %}
+                      </span>
+                    </td>
+                    <td>{{ doc.chunk_count }}</td>
+                    <td class="small text-muted">
+                      {{ doc.ingested_at.strftime("%Y-%m-%d") if doc.ingested_at else "—" }}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="small text-muted mb-0">No documents ingested yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

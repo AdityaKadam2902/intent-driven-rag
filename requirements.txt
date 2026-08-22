@@ -1,0 +1,23 @@
+# --- Currently used (loaders + chunker + fact extractor) ---
+pytest>=8.0.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+google-genai>=2.0.0
+
+# --- Needed for entity tagger + embeddings (next pieces) ---
+# (uses the same google-genai client already installed above)
+
+# --- Needed for retrieval + pipeline stage ---
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# --- Needed for storage stage ---
+psycopg2-binary>=2.9.0
+pgvector>=0.2.0
+
+# --- Needed for caching stage ---
+redis>=5.0.0
+
+# --- Needed for API stage ---
+fastapi>=0.110.0
+uvicorn>=0.29.0

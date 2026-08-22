@@ -1,0 +1,6 @@
+body {
+  min-height: 100vh;
+}
+.card-title i {
+  margin-right: 4px;
+}

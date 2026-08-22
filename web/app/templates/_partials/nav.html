@@ -1,0 +1,11 @@
+<nav class="navbar navbar-expand navbar-dark bg-dark px-3">
+  <a class="navbar-brand" href="/">
+    <i class="bi bi-robot"></i> Meldep AgentPod
+  </a>
+  <div class="ms-auto d-flex align-items-center gap-3">
+    <span class="text-light small">{{ request.session.get("user_id") }}</span>
+    <form method="post" action="/logout" class="m-0">
+      <button type="submit" class="btn btn-sm btn-outline-light">Log out</button>
+    </form>
+  </div>
+</nav>

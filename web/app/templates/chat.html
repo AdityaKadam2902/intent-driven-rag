@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ assistant.name }} — Meldep AgentPod{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h4 class="mb-0"><i class="bi bi-chat-dots"></i> {{ assistant.name }}</h4>
+  <div class="d-flex gap-2">
+    {% if turns %}
+      <form method="post" action="/chat/{{ assistant.id }}/clear" onsubmit="return confirm('Clear this conversation?');">
+        <button type="submit" class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-trash"></i> Clear chat
+        </button>
+      </form>
+    {% endif %}
+    <a href="/" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
+  </div>
+</div>
+
+{% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<div class="mb-4">
+  {% if not turns %}
+    <p class="text-muted">No messages yet — ask a question below to get started.</p>
+  {% endif %}
+
+  {% for turn in turns %}
+    {% if turn.role == "user" %}
+      <div class="d-flex justify-content-end mb-3">
+        <div class="bg-primary text-white rounded p-3" style="max-width: 75%;">
+          {{ turn.content }}
+        </div>
+      </div>
+    {% else %}
+      <div class="d-flex justify-content-start mb-3">
+        <div class="bg-white border rounded p-3 shadow-sm" style="max-width: 75%;">
+          <div>{{ turn.content | render_markdown | safe }}</div>
+
+          {% if turn.confidence %}
+            <div class="mt-2">
+              <span class="badge {% if turn.confidence == 'High' %}bg-success{% elif turn.confidence == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                Confidence: {{ turn.confidence }}
+              </span>
+              {% if turn.intention %}
+                <span class="badge bg-secondary">{{ turn.intention }}</span>
+              {% endif %}
+            </div>
+          {% endif %}
+
+{% if turn.sources %}
+  <div class="mt-2 small text-muted">
+    <strong>Sources:</strong>
+    <ul class="mb-0 ps-3">
+      {% for source in turn.sources %}
+        <li>
+          {% if source is mapping %}
+            {{ source.document_title if source.document_title else "Untitled document" }}
+            {% if source.heading_path %} — {{ source.heading_path }}{% endif %}
+            {% if source.document_version %} <span class="text-muted">(v{{ source.document_version }})</span>{% endif %}
+          {% else %}
+            {{ source }}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<form method="post" action="/chat/{{ assistant.id }}" class="d-flex gap-2">
+  <input
+    type="text"
+    name="message"
+    class="form-control"
+    placeholder="Ask a question about Meldep SOPs..."
+    required
+    autofocus
+  >
+  <button type="submit" class="btn btn-primary">
+    <i class="bi bi-send"></i> Ask
+  </button>
+</form>
+
+{% endblock %}

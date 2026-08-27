@@ -1,4 +1,4 @@
-# Meldep SOP Assistant
+# Intent Driven RAG System
 
 Agentic RAG system for answering SOP questions in Meldep. Full architecture
 is documented in `docs/architecture/` (not yet copied in - see note below).

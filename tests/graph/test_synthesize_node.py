@@ -29,21 +29,17 @@ def _fake_llm_response(text: str):
 
 
 def test_no_chunks_returns_low_confidence_no_llm_call():
-    """When nothing was retrieved, must not call the LLM at all - just
-    return a clear 'I don't know' style answer directly."""
-    with patch("app.graph.nodes.generation.synthesize.get_client") as mock_get_client:
+    with patch("app.graph.nodes.generation.synthesize.generate_content_safe") as mock_generate:
         result = synthesize({"user_message": "test", "retrieved_chunks": []})
 
         assert result["confidence"] == "Low"
         assert result["sources"] == []
-        mock_get_client.assert_not_called()
+        mock_generate.assert_not_called()
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
-def test_high_confidence_when_top_score_above_threshold(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_llm_response("Vikas Sir and Team Lead approve WFH.")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
+def test_high_confidence_when_top_score_above_threshold(mock_generate):
+    mock_generate.return_value = _fake_llm_response("Vikas Sir and Team Lead approve WFH.")
 
     chunks = [_fake_chunk(HIGH_CONFIDENCE_THRESHOLD + 0.01)]
     result = synthesize({"user_message": "who approves WFH", "retrieved_chunks": chunks})
@@ -51,11 +47,9 @@ def test_high_confidence_when_top_score_above_threshold(mock_get_client):
     assert result["confidence"] == "High"
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
-def test_medium_confidence_in_middle_range(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_llm_response("answer")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
+def test_medium_confidence_in_middle_range(mock_generate):
+    mock_generate.return_value = _fake_llm_response("answer")
 
     chunks = [_fake_chunk((HIGH_CONFIDENCE_THRESHOLD + MEDIUM_CONFIDENCE_THRESHOLD) / 2)]
     result = synthesize({"user_message": "test", "retrieved_chunks": chunks})
@@ -63,11 +57,9 @@ def test_medium_confidence_in_middle_range(mock_get_client):
     assert result["confidence"] == "Medium"
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
-def test_low_confidence_below_threshold(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_llm_response("answer")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
+def test_low_confidence_below_threshold(mock_generate):
+    mock_generate.return_value = _fake_llm_response("answer")
 
     chunks = [_fake_chunk(MEDIUM_CONFIDENCE_THRESHOLD - 0.05)]
     result = synthesize({"user_message": "test", "retrieved_chunks": chunks})
@@ -75,11 +67,9 @@ def test_low_confidence_below_threshold(mock_get_client):
     assert result["confidence"] == "Low"
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
-def test_sources_include_document_and_heading(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_llm_response("answer")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
+def test_sources_include_document_and_heading(mock_generate):
+    mock_generate.return_value = _fake_llm_response("answer")
 
     chunks = [_fake_chunk(0.7, title="WFH Policy", heading="General WFH Policy - FAQ")]
     result = synthesize({"user_message": "test", "retrieved_chunks": chunks})
@@ -88,13 +78,9 @@ def test_sources_include_document_and_heading(mock_get_client):
     assert result["sources"][0]["heading_path"] == "General WFH Policy - FAQ"
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
-def test_uses_resolved_query_over_raw_message_when_present(mock_get_client):
-    """For a follow-up, the prompt should ask about the RESOLVED
-    question, not the ambiguous raw follow-up text."""
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_llm_response("answer")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
+def test_uses_resolved_query_over_raw_message_when_present(mock_generate):
+    mock_generate.return_value = _fake_llm_response("answer")
 
     chunks = [_fake_chunk(0.7)]
     synthesize({
@@ -103,17 +89,15 @@ def test_uses_resolved_query_over_raw_message_when_present(mock_get_client):
         "retrieved_chunks": chunks,
     })
 
-    args, kwargs = mock_client.models.generate_content.call_args
+    _, kwargs = mock_generate.call_args
     assert "What is the WFH policy for interns?" in kwargs["contents"]
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
-def test_answer_comes_from_llm_response_text(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_llm_response(
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
+def test_answer_comes_from_llm_response_text(mock_generate):
+    mock_generate.return_value = _fake_llm_response(
         "Both the Team Lead and Vikas Sir must approve."
     )
-    mock_get_client.return_value = mock_client
 
     chunks = [_fake_chunk(0.7)]
     result = synthesize({"user_message": "test", "retrieved_chunks": chunks})
@@ -121,19 +105,10 @@ def test_answer_comes_from_llm_response_text(mock_get_client):
     assert result["answer"] == "Both the Team Lead and Vikas Sir must approve."
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
-def test_duplicate_sources_are_deduplicated(mock_get_client):
-    """Regression test for a real issue found in live testing: several
-    chunks from the top-N can point at the SAME heading/section (with
-    a small document set, near-identical-scoring chunks commonly make
-    the cut), and showing the same source 4 times looks like 4 pieces
-    of corroborating evidence when it's really 1 - misleading, even
-    though not factually wrong."""
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_llm_response("answer")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
+def test_duplicate_sources_are_deduplicated(mock_generate):
+    mock_generate.return_value = _fake_llm_response("answer")
 
-    # 4 chunks, but only 2 genuinely distinct (document, version, heading) combos
     chunks = [
         _fake_chunk(0.7, title="WFH Policy", heading="General WFH Policy - FAQ"),
         _fake_chunk(0.65, title="WFH Policy", heading="General WFH Policy - FAQ"),

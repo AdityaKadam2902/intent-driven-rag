@@ -1,10 +1,7 @@
 """
-Tests the COMPILED graph end to end - not just the classification node
-in isolation, but that classify_intention's output actually routes
-through the conditional edge to the correct terminal node. This is the
-real proof that the six-way router is "provably real, not implied" -
-Section 3's requirement - since these tests exercise the actual graph
-execution, not just a function call.
+Tests the COMPILED graph end to end - not just individual node
+functions, but that classify_intention's output actually routes
+through the conditional edge to the correct terminal node.
 """
 import os
 import sys
@@ -22,11 +19,9 @@ def _fake_response(intention: str):
     return fake
 
 
-@patch("app.graph.nodes.routing.classify_intention.get_client")
-def test_chitchat_routes_to_direct_answer(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_response("chitchat")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.routing.classify_intention.generate_content_safe")
+def test_chitchat_routes_to_direct_answer(mock_generate):
+    mock_generate.return_value = _fake_response("chitchat")
 
     graph = build_graph()
     result = graph.invoke({"user_message": "hi"})
@@ -36,11 +31,9 @@ def test_chitchat_routes_to_direct_answer(mock_get_client):
     assert result["sources"] == []
 
 
-@patch("app.graph.nodes.routing.classify_intention.get_client")
-def test_meta_routes_to_direct_answer(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_response("meta")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.routing.classify_intention.generate_content_safe")
+def test_meta_routes_to_direct_answer(mock_generate):
+    mock_generate.return_value = _fake_response("meta")
 
     graph = build_graph()
     result = graph.invoke({"user_message": "what can you help with"})
@@ -49,11 +42,9 @@ def test_meta_routes_to_direct_answer(mock_get_client):
     assert "cite" in result["answer"].lower()
 
 
-@patch("app.graph.nodes.routing.classify_intention.get_client")
-def test_actionable_routes_to_explain_only_response(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_response("actionable")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.routing.classify_intention.generate_content_safe")
+def test_actionable_routes_to_explain_only_response(mock_generate):
+    mock_generate.return_value = _fake_response("actionable")
 
     graph = build_graph()
     result = graph.invoke({"user_message": "apply leave for me"})
@@ -62,11 +53,9 @@ def test_actionable_routes_to_explain_only_response(mock_get_client):
     assert "can't perform actions" in result["answer"]
 
 
-@patch("app.graph.nodes.routing.classify_intention.get_client")
-def test_escalation_routes_to_human_handoff(mock_get_client):
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_response("escalation")
-    mock_get_client.return_value = mock_client
+@patch("app.graph.nodes.routing.classify_intention.generate_content_safe")
+def test_escalation_routes_to_human_handoff(mock_generate):
+    mock_generate.return_value = _fake_response("escalation")
 
     graph = build_graph()
     result = graph.invoke({"user_message": "I need to report harassment"})
@@ -75,15 +64,15 @@ def test_escalation_routes_to_human_handoff(mock_get_client):
     assert "HR" in result["answer"]
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
 @patch("app.graph.nodes.retrieval.retrieve.hybrid_search")
-@patch("app.graph.nodes.routing.classify_intention.get_client")
+@patch("app.graph.nodes.routing.classify_intention.generate_content_safe")
 def test_informational_routes_through_full_retrieval_and_synthesis(
-    mock_classify_client, mock_search, mock_synth_client
+    mock_classify_generate, mock_search, mock_synth_generate
 ):
     from app.retrieval.retrievers.hybrid_retriever import RetrievedChunk
 
-    mock_classify_client.return_value.models.generate_content.return_value = _fake_response("informational")
+    mock_classify_generate.return_value = _fake_response("informational")
 
     chunk = RetrievedChunk(
         chunk_id="1", document_id="1", document_title="WFH Policy", document_version="1.0",
@@ -95,7 +84,7 @@ def test_informational_routes_through_full_retrieval_and_synthesis(
 
     fake_llm_answer = MagicMock()
     fake_llm_answer.text = "Vikas Sir and the Team Lead approve WFH requests."
-    mock_synth_client.return_value.models.generate_content.return_value = fake_llm_answer
+    mock_synth_generate.return_value = fake_llm_answer
 
     graph = build_graph()
     result = graph.invoke({"user_message": "who approves WFH"})
@@ -106,24 +95,21 @@ def test_informational_routes_through_full_retrieval_and_synthesis(
     assert result["sources"][0]["document_title"] == "WFH Policy"
 
 
-@patch("app.graph.nodes.generation.synthesize.get_client")
+@patch("app.graph.nodes.generation.synthesize.generate_content_safe")
 @patch("app.graph.nodes.retrieval.retrieve.hybrid_search")
-@patch("app.graph.nodes.retrieval.resolve_follow_up.get_client")
-@patch("app.graph.nodes.routing.classify_intention.get_client")
+@patch("app.graph.nodes.retrieval.resolve_follow_up.generate_content_safe")
+@patch("app.graph.nodes.routing.classify_intention.generate_content_safe")
 def test_follow_up_resolves_then_retrieves_then_synthesizes(
-    mock_classify_client, mock_resolve_client, mock_search, mock_synth_client
+    mock_classify_generate, mock_resolve_generate, mock_search, mock_synth_generate
 ):
-    """The full follow_up path: classify -> resolve_follow_up ->
-    retrieve -> rerank -> synthesize, each step's mock proving the
-    previous step's output was actually used by the next one."""
     from app.graph.nodes.retrieval.resolve_follow_up import ResolvedQuery
     from app.retrieval.retrievers.hybrid_retriever import RetrievedChunk
 
-    mock_classify_client.return_value.models.generate_content.return_value = _fake_response("follow_up")
+    mock_classify_generate.return_value = _fake_response("follow_up")
 
     fake_resolved = MagicMock()
     fake_resolved.parsed = ResolvedQuery(resolved_query="What is the WFH policy for interns?")
-    mock_resolve_client.return_value.models.generate_content.return_value = fake_resolved
+    mock_resolve_generate.return_value = fake_resolved
 
     chunk = RetrievedChunk(
         chunk_id="1", document_id="1", document_title="WFH Policy", document_version="1.0",
@@ -135,7 +121,7 @@ def test_follow_up_resolves_then_retrieves_then_synthesizes(
 
     fake_llm_answer = MagicMock()
     fake_llm_answer.text = "Interns are generally not allowed to work from home."
-    mock_synth_client.return_value.models.generate_content.return_value = fake_llm_answer
+    mock_synth_generate.return_value = fake_llm_answer
 
     graph = build_graph()
     result = graph.invoke({
@@ -145,21 +131,16 @@ def test_follow_up_resolves_then_retrieves_then_synthesizes(
 
     assert result["intention"] == "follow_up"
     assert result["resolved_query"] == "What is the WFH policy for interns?"
-    # proves retrieve() actually used the resolved query, not the raw one
     args, _ = mock_search.call_args
     assert args[0] == "What is the WFH policy for interns?"
     assert result["answer"] == "Interns are generally not allowed to work from home."
 
 
-@patch("app.graph.nodes.routing.classify_intention.get_client")
-def test_chitchat_never_calls_retrieval_or_embedding(mock_get_client):
+@patch("app.graph.nodes.routing.classify_intention.generate_content_safe")
+def test_chitchat_never_calls_retrieval_or_embedding(mock_generate):
     """The actual architectural guarantee Section 3 requires: no-DB-call
-    paths must never touch retrieval or embeddings at all, not just
-    return a plausible-looking answer. Patches embed_query itself and
-    asserts it is NEVER called for a chitchat message."""
-    mock_client = MagicMock()
-    mock_client.models.generate_content.return_value = _fake_response("chitchat")
-    mock_get_client.return_value = mock_client
+    paths must never touch retrieval or embeddings at all."""
+    mock_generate.return_value = _fake_response("chitchat")
 
     with patch("app.ingestion.embeddings.embedder.embed_query") as mock_embed:
         graph = build_graph()

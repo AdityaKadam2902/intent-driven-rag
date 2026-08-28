@@ -15,6 +15,7 @@ class GraphState(TypedDict, total=False):
     intention: IntentionLabel
     resolved_query: str
     retrieved_chunks: list
+    db_unavailable: bool  # set by retrieve() when the Postgres circuit breaker is open
 
     answer: str
     confidence: Literal["High", "Medium", "Low"]

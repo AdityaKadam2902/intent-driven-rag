@@ -71,6 +71,22 @@ def _dedupe_sources(chunks) -> list[dict]:
 def synthesize(state: GraphState) -> dict:
     chunks = state.get("retrieved_chunks", [])
 
+    if state.get("db_unavailable"):
+        # Distinct from the "SOPs don't cover this" case below - this
+        # is "we couldn't even check," not "we checked and found
+        # nothing." Conflating the two would be misleading: a user
+        # reading "I don't have information on this" during a real DB
+        # outage would reasonably (and wrongly) conclude the topic
+        # just isn't documented anywhere.
+        return {
+            "answer": "The system is temporarily unable to search the "
+            "SOPs right now - this looks like a database connectivity "
+            "issue, not a gap in the documentation. Please try again "
+            "in a moment.",
+            "confidence": "Low",
+            "sources": [],
+        }
+
     if not chunks:
         return {
             "answer": "I don't have information on this in the SOPs I "

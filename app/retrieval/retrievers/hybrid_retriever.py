@@ -3,22 +3,20 @@ Hybrid retrieval - vector (semantic) + keyword (full-text) search
 combined in one Postgres query, per the architecture doc's design
 (0.7 vector weight / 0.3 text weight).
 
-Why hybrid, not vector-only: people search SOPs with exact terms
-("WFH days per month", "who approves leave") that pure embedding
-similarity sometimes misses, but keyword search alone misses questions
-phrased differently than the source document. Combining both catches
-more real questions than either alone - this was true in the original
-architecture research and is why both were built into the schema from
-the start (the tsv column has been sitting unused until now).
-
-Only searches documents that are Published + Active - the servability
-filter agreed on early in this project (Sir confirmed: all SOPs open
-to all employees, so no per-user permission filter needed here, only
-the Published/Active gate).
+Postgres circuit breaker: the actual query execution (connect + query
++ fetch) is wrapped through the shared DB breaker in
+app/database/postgres.py. If Postgres is down, hybrid_search() raises
+CircuitOpenError rather than a raw psycopg2 exception - callers (the
+retrieve graph node) are responsible for catching this and returning
+a clear, honest "temporarily unavailable" message, not a raw DB error
+surfacing in the UI. This mirrors the Gemini breaker pattern, using a
+SEPARATE breaker instance (see app/database/postgres.py's docstring
+for why sharing one breaker between two independent dependencies would
+be wrong).
 """
 from dataclasses import dataclass
 
-from app.database.postgres import get_connection
+from app.database.postgres import get_connection, with_db_breaker
 from app.ingestion.embeddings.embedder import embed_query
 
 
@@ -40,39 +38,14 @@ class RetrievedChunk:
     combined_score: float
 
 
-def hybrid_search(
-    query_text: str,
-    limit: int = 20,
-    vector_weight: float = 0.7,
-    text_weight: float = 0.3,
-    _filter_document_title: str | None = None,
-) -> list[RetrievedChunk]:
-    """Embeds the query (RETRIEVAL_QUERY task type - see embedder.py's
-    module docstring for why this specific task type matters), then
-    runs one combined SQL query scoring every chunk by both vector
-    cosine similarity and Postgres full-text rank, weighted and summed.
-
-    Returns the top `limit` chunks, highest combined_score first.
-
-    _filter_document_title: for TEST ISOLATION ONLY - not a real search
-    feature. Real callers should never pass this; it exists so tests
-    can scope a query to just their own fixture document instead of
-    competing against the entire live dataset, which is fragile (a
-    test's deliberately extreme score could be pushed out of an
-    unfiltered LIMIT once enough real data exists - this is exactly
-    what happened during development, see test_hybrid_retriever.py).
-    """
-    query_vector = embed_query(query_text)
-
+def _run_query(query_vector, query_text, vector_weight, text_weight, limit, filter_document_title):
+    """The actual DB work - separated into its own function so it can
+    be passed to with_db_breaker() as a single callable."""
     title_filter_sql = ""
-    # Params must be built in the EXACT order their %s placeholders
-    # appear in the final SQL text below - the title filter clause is
-    # inserted right after WHERE, BEFORE the ORDER BY clause, so its
-    # parameter must come before the ORDER BY params, not after.
     params = [query_vector, query_text]
-    if _filter_document_title is not None:
+    if filter_document_title is not None:
         title_filter_sql = "AND d.title = %s"
-        params.append(_filter_document_title)
+        params.append(filter_document_title)
     params.extend([vector_weight, query_vector, text_weight, query_text, limit])
 
     conn = get_connection()
@@ -106,9 +79,30 @@ def hybrid_search(
                 """,
                 tuple(params),
             )
-            rows = cur.fetchall()
+            return cur.fetchall()
     finally:
         conn.close()
+
+
+def hybrid_search(
+    query_text: str,
+    limit: int = 20,
+    vector_weight: float = 0.7,
+    text_weight: float = 0.3,
+    _filter_document_title: str | None = None,
+) -> list[RetrievedChunk]:
+    """Embeds the query, then runs the combined SQL query through the
+    shared Postgres circuit breaker. Raises CircuitOpenError if the
+    breaker is open - see module docstring.
+
+    Returns the top `limit` chunks, highest combined_score first.
+    """
+    query_vector = embed_query(query_text)
+
+    rows = with_db_breaker(
+        _run_query, query_vector, query_text, vector_weight, text_weight,
+        limit, _filter_document_title,
+    )
 
     results = []
     for row in rows:

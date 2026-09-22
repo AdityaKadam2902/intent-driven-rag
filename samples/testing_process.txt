@@ -1,0 +1,100 @@
+Title: Testing Process
+Category: Engineer
+Sub Category: SDLC
+Version: 1.0
+Status: Published
+Is Active: Active
+Created By: Bhagyashri Pednekar
+Created Date: 06/16/2026
+Updated By: Bhagyashri Pednekar
+Updated Date: 07/03/2026
+
+Purpose
+The purpose of STLC is to ensure that software is tested systematically, defects are identified and resolved, and the delivered product meets business and user requirements.
+
+Entry Criteria
+Before testing begins, ensure:
+- Requirement is documented and available in Meld-EP / Task.
+- Requirement understanding is completed.
+- Necessary access is provided.
+- Test environment is available.
+
+Test Planning
+
+Test Plan Preparation
+QA team shall prepare a Test Plan containing:
+- Scope of testing
+- Testing approach
+- Resources involved
+- Timeline
+- OneDrive folder path for all testing-related documents
+
+Document Repository
+All testing-related documents must be maintained in a centralized OneDrive folder, including:
+- Test Plan
+- Test Cases
+- Test Execution Reports
+- Defect Reports
+- Release-wise Regression Testing Reports
+The OneDrive folder path should be mentioned in the Test Plan document.
+
+Test Case Design
+Before writing test cases, QA should understand:
+- Business process driving the requirement
+- End user and user roles
+- Use cases and workflows
+- Access permissions
+- UI look and feel requirements
+- Functional requirements
+- Validations
+- Data requirements
+
+Test Coverage
+Test cases should cover:
+- CRUD operations (Create, Read, Update, Delete)
+- Dropdowns and selection controls
+- Mandatory field validations
+- Business rule validations
+- UI verification
+- Data verification
+- Access control and permissions
+- Positive and negative scenarios
+- Boundary and exception scenarios
+
+AI-Assisted Test Case Generation
+QA team may use AI tools to generate initial test cases. However:
+- All AI-generated test cases must be reviewed by QA.
+- Test cases should be aligned with business requirements.
+- QA is responsible for the final accuracy and completeness of test coverage.
+
+Test Execution
+Testing activities may include:
+- Functional Testing
+- Validation Testing
+- Integration Testing
+- User Acceptance Support
+- Regression Testing
+- Retesting
+
+Defect Management
+- All defects shall be logged in Meld-EP.
+- Defects should contain proper reproduction steps, screenshots, and severity.
+- Defect status shall be tracked until closure.
+
+Retesting and Regression Testing
+
+Retesting
+- Retesting is performed after defect fixes are received.
+- A note must be maintained indicating the retested defects and their outcomes.
+
+Regression Testing
+- Regression testing must be linked to the respective release.
+- Regression test execution and results should be documented release-wise.
+- Regression reports must be stored in the designated OneDrive folder.
+
+Test Closure
+QA shall prepare:
+- Test Execution Report
+- Defect Summary Report
+- Regression Testing Summary
+- QA Sign-off

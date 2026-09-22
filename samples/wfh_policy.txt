@@ -1,0 +1,40 @@
+Title: Work From Home (WFH) Policy
+Category: HR
+Sub Category: WFH
+Version: 1.0
+Status: Published
+Is Active: Active
+
+Intern WFH Policy - FAQ
+
+1. Are interns allowed to work from home?
+No.
+
+2. What should a Team Lead do if an intern requests WFH due to sickness?
+Please decline the request and ask them to apply for leave.
+
+3. Can interns working on a client project be allowed WFH?
+No.
+
+4. Can interns be allowed WFH if the company requires them to work from home?
+Yes, if an intern is sick but project dependency exists, and the company requires the intern to continue work remotely, WFH may be allowed only with management approval.
+
+General WFH Policy - FAQ
+
+5. Will frequent WFH requests be monitored?
+Yes. Frequent WFH requests will be reviewed by management during the monthly internal audit and management meeting.
+
+6. What situations are considered valid for WFH?
+WFH may be considered only in genuine emergency situations, such as:
+- Health issues where the employee is able to work
+- Family emergencies
+- Unavoidable personal situations
+
+7. Who has the authority to approve WFH requests?
+WFH requests must be reviewed by the Team Lead and approved by Vikas Sir before the employee can work from home.
+
+8. What action will be taken if the WFH policy is misused?
+If an employee is found misusing the WFH policy, such as requesting WFH without a genuine reason or not being available during working hours, the matter will be reviewed by management. Appropriate action may be taken, including warning, restriction of future WFH requests, or other disciplinary action.
+
+9. Can management cancel or revoke WFH approval?
+Yes. Management may cancel or revoke WFH approval if work delivery, project requirements, or team collaboration is affected.

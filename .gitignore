@@ -6,6 +6,4 @@ __pycache__/
 venv/
 .venv/
 
-# Internal/sample business documents
-samples/*.txt
 web/data/staging/

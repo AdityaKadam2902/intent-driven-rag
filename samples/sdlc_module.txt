@@ -1,0 +1,101 @@
+Title: SDLC Module
+Category: Engineer
+Sub Category: SDLC
+Version: 1.0
+Status: Published
+Is Active: Active
+
+What is SDLC in our organization?
+SDLC (Software Development Life Cycle) defines how a project moves from Requirement to Development to Testing to Deployment to Maintenance to Security and Governance.
+It ensures:
+- Structured development
+- Quality assurance
+- Controlled deployment
+- Traceability of work
+- Compliance readiness
+
+Which tools are used across SDLC phases?
+SDLC Phase: Requirement Analysis -- Tools Used: Meld-EP, OneDrive, Email
+SDLC Phase: Development -- Tools Used: VS Code, Visual Studio, GitHub, TFS, OneDrive
+SDLC Phase: Testing (QA) -- Tools Used: Meld-EP, Excel
+SDLC Phase: Deployment -- Tools Used: GitHub, VS Code, SQL
+SDLC Phase: Maintenance and Support -- Tools Used: Meld-EP, GCP, Teams, OneDrive
+SDLC Phase: Architecture and Design -- Tools Used: Figma, Canva, Gamma, OneDrive
+SDLC Phase: Information Security -- Tools Used: Meld-EP, Teams, OneDrive
+
+How are the requirements collected?
+Requirements are gathered through:
+- Meld-EP Project Folder
+- Client discussions
+- Emails
+- Team meetings
+
+Where are the requirements documented?
+Requirements are stored in:
+- Project Folder
+- OneDrive documentation repository
+
+How is feasibility decided?
+Through:
+- Technical discussion
+- Stakeholder meetings
+- Email approvals
+
+How are priorities defined?
+Requirements are prioritized during team meetings based on:
+- Business impact
+- Urgency
+- Development effort
+
+How are requirement changes handled?
+Change Requests are managed via:
+- Email communication
+- Team meetings
+- Updated documentation
+
+How is requirement traceability maintained?
+Traceability is maintained using:
+- Meld-EP tracking
+- Meeting discussions
+- Documentation updates
+
+Who prepares the Test Plan?
+QA team prepares the Test Strategy and Test Plan in Meld-EP.
+
+Where are test cases created?
+Test cases are created and managed in:
+- Meld-EP
+
+How is test execution performed?
+Manual testing is done using:
+- Meld-EP
+- Excel (when required)
+
+How are defects tracked?
+All defects are logged in:
+- Meld-EP Issue Tracking
+
+What testing types are performed?
+- Functional Testing
+- Regression Testing
+- Manual Testing
+- Validation Testing
+
+How is testing closed?
+QA generates:
+- Test Report
+- QA Sign-off
+
+How are incidents reported?
+Through:
+- Email
+- Team meetings
+- Meld-EP tracking
+
+How is root cause analysis done?
+RCA is conducted during team discussions after issue investigation.
+
+How are bugs fixed post-release?
+Fixes are implemented via:
+- VS Code / Visual Studio
+- GitHub patch release

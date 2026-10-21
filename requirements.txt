@@ -17,6 +17,7 @@ pgvector>=0.2.0
 
 # --- Needed for caching stage ---
 redis>=5.0.0
+fakeredis>=2.20.0
 
 # --- Needed for API stage ---
 fastapi>=0.110.0

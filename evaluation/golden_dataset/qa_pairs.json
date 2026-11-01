@@ -1,0 +1,208 @@
+{
+  "version": 2,
+  "notes": "Hand-written from samples/wfh_policy.txt, samples/testing_process.txt and samples/sdlc_module.txt. Each case targets a specific weak spot found during development - see 'targets'. Checks are keyword-based (case-insensitive), not exact-string, because LLM phrasing varies; see the header of evaluation/run_eval.py for every supported check. A case with 'sequence' runs its steps in order in one process so cache behaviour can be asserted. v2 expectations were derived from the source text and have not all been confirmed against live output yet - on the first live run, a failure on a short keyword may mean the check needs loosening (use must_contain_any), not that the system is wrong. Read the printed answer before deciding.",
+  "cases": [
+    {
+      "id": "precision_and_not_or",
+      "question": "who approves WFH requests",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "Team Lead",
+        "Vikas Sir"
+      ],
+      "must_not_contain": [
+        "either",
+        " or Vikas",
+        "or the Team Lead"
+      ],
+      "expected_min_confidence": "High",
+      "targets": "The core precision case this whole project was built around - approval requires BOTH Team Lead AND Vikas Sir, not either alone. Verified live multiple times already; this locks it in as a permanent, automatically-checked case."
+    },
+    {
+      "id": "negation_intern_default",
+      "question": "are interns allowed to work from home",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "No",
+        "intern"
+      ],
+      "expected_min_confidence": "High",
+      "targets": "Simple negation - the default answer for interns is a flat No, not a hedge. Checks the answer doesn't accidentally soften a clear negative into 'it depends'."
+    },
+    {
+      "id": "negation_with_exception",
+      "question": "can an intern ever get WFH if they are sick and the project needs them",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "management approval"
+      ],
+      "targets": "The intern WFH exception - default is No, but there's a specific narrow exception (sick AND project dependency AND company requires remote work) allowed only with management approval. Tests whether the exception survives synthesis rather than getting flattened into a blanket 'no' or a blanket 'yes'."
+    },
+    {
+      "id": "multi_hop_two_faq_items",
+      "question": "if I keep requesting WFH a lot, what happens, and who decides if my approval gets cancelled",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "monitor",
+        "management"
+      ],
+      "targets": "Needs content from TWO separate FAQ items (frequent-request monitoring, item 5; and cancellation/revocation authority, item 9) combined into one coherent answer - tests whether top-5 retrieval surfaces both rather than only the best single match."
+    },
+    {
+      "id": "no_answer_exists",
+      "question": "what is the maternity leave policy",
+      "expected_intention": "informational",
+      "expect_low_confidence_or_decline": true,
+      "targets": "Genuinely not covered by any of the 3 sample SOPs. Tests whether the system honestly says it doesn't have this information rather than fabricating a plausible-sounding but invented answer. This is the single most important failure mode to catch - confidently wrong beats admitting uncertainty in trust terms, and this case exists to make sure that doesn't happen silently."
+    },
+    {
+      "id": "follow_up_resolution",
+      "question": "what about for interns",
+      "requires_history": [
+        {
+          "role": "assistant",
+          "content": "WFH requests must be reviewed by the Team Lead and approved by Vikas Sir."
+        }
+      ],
+      "expected_intention": "follow_up",
+      "must_contain_all": [
+        "intern"
+      ],
+      "targets": "Already proven live in manual testing - locking it in as a permanent automated case. Confirms the resolved query actually pulls intern-specific content, not a generic re-answer of the previous question."
+    },
+    {
+      "id": "actionable_declines_not_fakes",
+      "question": "apply leave for me right now",
+      "expected_intention": "actionable",
+      "must_contain_all": [
+        "can't perform actions"
+      ],
+      "must_not_contain": [
+        "done",
+        "submitted",
+        "applied"
+      ],
+      "targets": "Must decline to act, and critically must not use language that implies it actually did something (e.g. 'done!' or 'submitted your request') - a false claim of action taken is a serious trust violation, worse than a plain refusal."
+    },
+    {
+      "id": "escalation_routes_away_from_sops",
+      "question": "I want to report harassment from my manager",
+      "expected_intention": "escalation",
+      "must_contain_all": [
+        "HR"
+      ],
+      "must_not_contain_source": true,
+      "targets": "Must route to a human, and critically must NOT attempt to answer from SOP content or show SOP sources for a sensitive personal situation - checks that escalation genuinely skips retrieval, not just that the wording sounds appropriately serious."
+    },
+    {
+      "id": "chitchat_no_db_call",
+      "question": "hi",
+      "expected_intention": "chitchat",
+      "expected_min_confidence": "High",
+      "targets": "Baseline - must not trigger retrieval at all. Already covered by a dedicated unit test (test_chitchat_never_calls_retrieval_or_embedding), included here too so the full golden set exercises all six intentions in one run."
+    },
+    {
+      "id": "sdlc_tools_by_phase",
+      "question": "which tools are used in the deployment phase",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "GitHub",
+        "SQL"
+      ],
+      "must_not_contain": [
+        "Figma"
+      ],
+      "targets": "The SDLC tools table was flattened into 'Phase -- Tools Used' lines. Checks the phase-to-tools mapping survives chunking and synthesis, and that tools from OTHER phases (Figma is design-phase only) are not blended in."
+    },
+    {
+      "id": "cross_document_test_plan_owner",
+      "question": "who prepares the test plan",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "QA"
+      ],
+      "min_distinct_source_documents": 2,
+      "targets": "Replaces the old 'not constructible' placeholder. The SDLC Module and the Testing Process both define who prepares the Test Plan, so this is a genuine cross-document question. The distinct-documents check depends on retrieval ranking, not answer text - it is the check most likely to need tuning."
+    },
+    {
+      "id": "entry_criteria_before_testing",
+      "question": "what has to be in place before testing begins",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "documented",
+        "access",
+        "environment"
+      ],
+      "targets": "A bullet list under 'Entry Criteria' - checks the whole list stays attached to its lead-in sentence through chunking (rule-unit chunking) and none of the items is dropped."
+    },
+    {
+      "id": "regression_reports_location",
+      "question": "where are regression test reports stored",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "OneDrive"
+      ],
+      "targets": "A single exact fact (storage location) from the Regression Testing section, whose heading label is the known ambiguous-nesting case in the chunker."
+    },
+    {
+      "id": "negation_client_project_intern",
+      "question": "can an intern working on a client project work from home",
+      "expected_intention": "informational",
+      "must_contain_any": [
+        "not allowed",
+        "not permitted",
+        "cannot",
+        "can't",
+        "no,",
+        "not be allowed"
+      ],
+      "targets": "FAQ item 3 is a flat 'No.' The answer must keep the negation rather than hedging into 'it depends'. must_contain_any because wording varies."
+    },
+    {
+      "id": "defect_logging_tool",
+      "question": "where are defects logged",
+      "expected_intention": "informational",
+      "must_contain_all": [
+        "Meld-EP"
+      ],
+      "targets": "Both the Testing Process and the SDLC Module state this. Consistent cross-document agreement should produce one clean answer, not a conflict warning."
+    },
+    {
+      "id": "cache_repeat_returns_identical_answer",
+      "targets": "Cache correctness. The same question asked twice must be served from cache the second time, and the cached response must be identical (answer, confidence, sources). Needs Redis running. If it fails with cache_hit=False, check that step 1 was High/Medium confidence (Low answers are deliberately never cached).",
+      "sequence": [
+        {
+          "question": "who approves WFH requests",
+          "must_contain_all": [
+            "Vikas Sir"
+          ]
+        },
+        {
+          "question": "who approves WFH requests",
+          "expect_cache_hit": true,
+          "must_equal_previous": true
+        }
+      ]
+    },
+    {
+      "id": "entity_guard_general_vs_intern_wfh",
+      "targets": "The false-positive the entity-guarded cache exists to prevent. A general WFH-approval question is answered (and cached), then a structurally similar question about a SICK INTERN with a project dependency is asked. It must NOT be served the first answer from cache (cache_hit False, answer differs) and must reach the intern-specific rule: management approval.",
+      "sequence": [
+        {
+          "question": "who approves WFH requests",
+          "must_contain_all": [
+            "Vikas Sir"
+          ]
+        },
+        {
+          "question": "who approves WFH for an intern who is sick but the project depends on them",
+          "must_contain_all": [
+            "management"
+          ],
+          "expect_cache_hit": false,
+          "must_differ_from_previous": true
+        }
+      ]
+    }
+  ]
+}
